@@ -50,24 +50,20 @@ def call(Map configMap){
                 }
             }
             stage('Docker build') {
-                // when{
-                //     expression {params.deploy}
-                // }
+                
                 steps {
-                    withAWS(region: 'us-east-1', credentials: "aws-creds-${environment}"){
-                    
-                    sh """
-                    aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.us-east-1.amazonaws.com
+                    withAWS(region: 'us-east-1', credentials: "aws-creds-${environment}") {
+                        sh """
+                        aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.us-east-1.amazonaws.com
 
-                    docker build -t ${account_id}.dkr.ecr.us-east-1.amazonaws.com/${project}/${environment}/${component}:${appVersion} .
+                        docker build -t ${account_id}.dkr.ecr.us-east-1.amazonaws.com/${project}/${environment}/${component}:${appVersion} .
 
-                    docker images
+                        docker images
 
-                    docker push ${account_id}.dkr.ecr.us-east-1.amazonaws.com/${project}/${environment}/${component}:${appVersion}
-                
-                    """
+                        docker push ${account_id}.dkr.ecr.us-east-1.amazonaws.com/${project}/${environment}/${component}:${appVersion}
+                        """
+                    }
                 }
-                
             }
             stage('Deploy'){
                     when{
