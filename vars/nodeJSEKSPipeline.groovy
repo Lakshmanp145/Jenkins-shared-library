@@ -77,7 +77,7 @@ def call(Map configMap){
                 }
 
                 steps{
-                    build job: "${component}--deploy/${env.BRANCH_NAME}", parameters: [
+                    build job: "${component}-deploy/${env.BRANCH_NAME}", parameters: [
                         string(name: 'version', value: "$appVersion"),
                         string(name: 'ENVIRONMENT', value: "dev"),
                     ], wait: true
