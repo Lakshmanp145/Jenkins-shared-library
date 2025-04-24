@@ -5,21 +5,22 @@ def call(Map configMap){
         }
         options{
             timeout(time: 30, unit: 'MINUTES')
+            disableConcurrentBuilds()
+            //retry(1)
         }
         parameters{
-            booleanParam(name: 'deploy', defaultValue: false, description: 'select to deploy or not')
+            booleanParam(name: 'deploy', defaultValue: false, description: 'Select to deploy or not')
         }
         environment {
-            appVersion = '' // This will become global, we can use env accross stages
+            appVersion = '' // this will become global, we can use across pipeline
             region = 'us-east-1'
             account_id = '503561459301'
             project = configMap.get("project")
             environment = 'dev'
-            component = configMap.get("component") 
+            component = configMap.get("component")
         }
 
         stages {
-
             stage('Read the version') {
                 steps {
                     script{
@@ -29,26 +30,31 @@ def call(Map configMap){
                     }
                 }
             }
-            stage('Debug Env') {
-                steps {
-                    sh '''
-                echo "== Node location =="
-                which node || echo "node not found"
-                echo "== NPM location =="
-                which npm || echo "npm not found"
-                echo "== Versions =="
-                node -v || echo "node version not found"
-                npm -v || echo "npm version not found"
-                echo "== PATH =="
-                echo $PATH
-            '''
-                }
-            }
-            stage('Install dependencies') {
+            stage('Install Dependencies') {
                 steps {
                     sh 'npm install'
                 }
             }
+            /* stage('SonarQube analysis') {
+                environment {
+                    SCANNER_HOME = tool 'sonar-6.0' //scanner config
+                }
+                steps {
+                    // sonar server injection
+                    withSonarQubeEnv('sonar-6.0') {
+                        sh '$SCANNER_HOME/bin/sonar-scanner'
+                        //generic scanner, it automatically understands the language and provide scan results
+                    }
+                }
+            }
+
+            stage('Quality Gate') {
+                steps {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
+            } */
             stage('Docker build') {
                 
                 steps {
@@ -66,31 +72,29 @@ def call(Map configMap){
                 }
             }
             stage('Deploy'){
-                    when{
-                        expression {params.deploy}
-                    }
-
-                    steps{
-                        build job: "../${component}-cd", parameters: [
-                            string(name: 'version', value: "$appVersion"),
-                            string(name: 'ENVIRONMENT', value: "dev"),
-                        ], wait: true
-                    }
+                when{
+                    expression {params.deploy}
                 }
-                
+
+                steps{
+                    build job: "../${component}-cd", parameters: [
+                        string(name: 'version', value: "$appVersion"),
+                        string(name: 'ENVIRONMENT', value: "dev"),
+                    ], wait: true
+                }
             }
-        }  
+        }
+
         post {
-            always {
-                echo "this section runs always"
-                //deleteDir()
+            always{
+                echo "This sections runs always"
+                deleteDir()
             }
             success{
-                echo "this section runs when pipeline success"
+                echo "This section run when pipeline success"
             }
             failure{
-                echo "this section runs when pipeline failure"
-                
+                echo "This section run when pipeline failure"
             }
         }
     }
